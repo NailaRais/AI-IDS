@@ -13,7 +13,7 @@
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "web3": "^4.14.0"
-        "react-scripts": "^5.0.1" // Add this line if it's missing
+        "react-scripts": "^5.0.1" 
     },
     "devDependencies": {},
     "description": ""
