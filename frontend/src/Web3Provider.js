@@ -29,5 +29,4 @@ const Web3Provider = ({ children }) => {
     );
 };
 
-// Export Web3Provider as the default
 export default Web3Provider;
