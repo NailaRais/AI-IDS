@@ -3,7 +3,7 @@ import Web3 from 'web3';
 
 export const Web3Context = React.createContext();
 
-export const Web3Provider = ({ children }) => {
+const Web3Provider = ({ children }) => {
     const [web3, setWeb3] = useState(null);
 
     useEffect(() => {
@@ -28,3 +28,6 @@ export const Web3Provider = ({ children }) => {
         </Web3Context.Provider>
     );
 };
+
+// Export Web3Provider as the default
+export default Web3Provider;
