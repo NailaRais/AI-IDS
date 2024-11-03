@@ -1,0 +1,10 @@
+{
+  "abi": [
+    // Your ABI array here
+  ],
+  "networks": {
+    "5777": {
+      "address": "0xYourContractAddress"
+    }
+  }
+}
