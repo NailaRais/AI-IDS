@@ -1,3 +1,4 @@
+// Web3Provider.js
 import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
 
@@ -30,3 +31,4 @@ const Web3Provider = ({ children }) => {
 };
 
 export default Web3Provider;
+
