@@ -5,30 +5,45 @@ import IntrusionDetection from '../abis/IntrusionDetection.json';
 const Dashboard = () => {
     const [alerts, setAlerts] = useState([]);
     const [description, setDescription] = useState('');
+    const [contract, setContract] = useState(null);
+    const [account, setAccount] = useState('');
 
     useEffect(() => {
-        const loadAlerts = async () => {
+        const initWeb3 = async () => {
             const web3 = new Web3(Web3.givenProvider || "http://localhost:7545");
-            const networkId = await web3.eth.net.getId();
-            const contractAddress = IntrusionDetection.networks[networkId].address;
-            const contract = new web3.eth.Contract(IntrusionDetection.abi, contractAddress);
 
-            const response = await contract.methods.getAlerts().call();
+            // Set up account
+            const accounts = await web3.eth.getAccounts();
+            setAccount(accounts[0]);
+
+            // Set up contract
+            const networkId = await web3.eth.net.getId();
+            const networkData = IntrusionDetection.networks[networkId];
+            if (networkData) {
+                const contractInstance = new web3.eth.Contract(IntrusionDetection.abi, networkData.address);
+                setContract(contractInstance);
+                loadAlerts(contractInstance);
+            } else {
+                console.error('Smart contract not deployed to detected network.');
+            }
+        };
+
+        const loadAlerts = async (contractInstance) => {
+            const response = await contractInstance.methods.getAlerts().call();
             setAlerts(response);
         };
 
-        loadAlerts();
+        initWeb3();
     }, []);
 
     const logAlert = async () => {
-        const web3 = new Web3(Web3.givenProvider || "http://localhost:7545");
-        const accounts = await web3.eth.getAccounts();
-        const contract = new web3.eth.Contract(IntrusionDetection.abi, contractAddress);
-
-        await contract.methods.logAlert(description).send({ from: accounts[0] });
-        setDescription('');
-        // Reload alerts
-        loadAlerts();
+        if (contract && account) {
+            await contract.methods.logAlert(description).send({ from: account });
+            setDescription('');
+            loadAlerts(contract); // Reload alerts after logging a new one
+        } else {
+            console.error('Contract or account not loaded.');
+        }
     };
 
     return (
@@ -42,8 +57,8 @@ const Dashboard = () => {
             />
             <button onClick={logAlert}>Log Alert</button>
             <ul>
-                {alerts.map(alert => (
-                    <li key={alert.id}>{alert.description} at {new Date(alert.timestamp * 1000).toString()}</li>
+                {alerts.map((alert, index) => (
+                    <li key={index}>{alert.description} at {new Date(alert.timestamp * 1000).toString()}</li>
                 ))}
             </ul>
         </div>
