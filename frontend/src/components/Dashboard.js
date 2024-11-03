@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Web3 from 'web3';
+import { Web3Context } from '../Web3Provider';
 import IntrusionDetection from '../abis/IntrusionDetection.json';
 
 const Dashboard = () => {
-    const [alerts, setAlerts] = useState([]); // State for storing alerts
-    const [description, setDescription] = useState(''); // State for input field
-    const [contract, setContract] = useState(null); // State for contract instance
-    const [account, setAccount] = useState(''); // State for user account
+    const [alerts, setAlerts] = useState([]);
+    const [description, setDescription] = useState('');
+    const [contract, setContract] = useState(null);
+    const [account, setAccount] = useState('');
+    const web3 = useContext(Web3Context); // Use Web3 context
 
     useEffect(() => {
-        const initWeb3 = async () => {
-            // Initialize Web3
-            const web3 = new Web3(Web3.givenProvider || "http://localhost:7545");
+        const initContract = async () => {
+            if (!web3) return; // Wait until web3 is initialized
 
             // Set up account
             const accounts = await web3.eth.getAccounts();
@@ -20,30 +21,32 @@ const Dashboard = () => {
             // Set up contract
             const networkId = await web3.eth.net.getId();
             const networkData = IntrusionDetection.networks[networkId];
-
             if (networkData) {
                 const contractInstance = new web3.eth.Contract(IntrusionDetection.abi, networkData.address);
                 setContract(contractInstance);
-                loadAlerts(contractInstance); // Load alerts after setting the contract
+                loadAlerts(contractInstance);
             } else {
                 console.error('Smart contract not deployed to detected network.');
             }
         };
 
         const loadAlerts = async (contractInstance) => {
-            // Load alerts from the smart contract
-            const response = await contractInstance.methods.getAlerts().call();
-            setAlerts(response);
+            const count = await contractInstance.methods.getAlertCount().call();
+            const alertsArray = [];
+            for (let i = 0; i < count; i++) {
+                const alert = await contractInstance.methods.getAlert(i).call();
+                alertsArray.push(alert);
+            }
+            setAlerts(alertsArray);
         };
 
-        initWeb3(); // Initialize Web3 on component mount
-    }, []);
+        initContract();
+    }, [web3]); // Only re-run when web3 changes
 
     const logAlert = async () => {
-        // Log an alert to the smart contract
         if (contract && account) {
             await contract.methods.logAlert(description).send({ from: account });
-            setDescription(''); // Clear input field after logging
+            setDescription('');
             loadAlerts(contract); // Reload alerts after logging a new one
         } else {
             console.error('Contract or account not loaded.');
@@ -62,9 +65,7 @@ const Dashboard = () => {
             <button onClick={logAlert}>Log Alert</button>
             <ul>
                 {alerts.map((alert, index) => (
-                    <li key={index}>
-                        {alert.description} at {new Date(alert.timestamp * 1000).toString()}
-                    </li>
+                    <li key={index}>{alert.description} at {new Date(alert.timestamp * 1000).toString()}</li>
                 ))}
             </ul>
         </div>
